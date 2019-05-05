@@ -5,8 +5,8 @@ package com.jarvis.exploration;
  * Purpose - Exloring Google Speech API basic utilities
  */
 
+// Google Cloud packages
 import com.google.cloud.speech.v1.RecognitionConfig.AudioEncoding;
-import com.google.cloud.speech.v1.RecognizeResponse;
 import com.google.protobuf.ByteString;
 import com.google.cloud.speech.spi.v1.SpeechClient;
 import com.google.cloud.speech.v1.RecognitionAudio;
@@ -14,8 +14,8 @@ import com.google.cloud.speech.v1.SpeechRecognitionAlternative;
 import com.google.cloud.speech.v1.SpeechRecognitionResult;
 import com.google.cloud.speech.v1.RecognitionConfig;
 
+// Java packages
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
@@ -24,38 +24,27 @@ public class SpeechRecognizer {
 
     public static void main(String[] args) throws Exception {
 
-        //  Creating an instance of the Speech Client API
-        SpeechClient speechClient = SpeechClient.create();
+        //  Instantiating the Client API
+        SpeechClient localSpClient = SpeechClient.create();
 
-        //  The path of the audio file to exploit
-        String fileName = "/resources/steves_job_stanford_speech.raw";
-        Path filePath = Paths.get(fileName);
-        byte[] dataRead = Files.readAllBytes(filePath);
-        ByteString speecBytes = ByteString.copyFrom(dataRead);
+        // The first argument is the file which will be used as local content
+        ByteString localSpContent = ByteString.copyFrom(Files.readAllBytes(Paths.get(args[0])));
 
-        // Requesting for the sync regnonitizer
-        RecognitionConfig recognitionConfig = RecognitionConfig.newBuilder()
-            .setEncoding(AudioEncoding.LINEAR16)
-            .setLanguageCode("en-US")
-            .setSampleRateHertz(16000)
-            .build();
+        // Setting up the Recognition Configurations
+        RecognitionConfig recConfigurations = RecognitionConfig.newBuilder().setEncoding(AudioEncoding.LINEAR16).setLanguageCode("en-US").setSampleRateHertz(16000).build();
 
-        //Recognition Audio builder
-        RecognitionAudio recognitionAudio = RecognitionAudio.newBuilder()
-            .setContent(speecBytes)
-            .build();
+        // Instantiating the recognition audio builder
+        RecognitionAudio recAudio = RecognitionAudio.newBuilder().setContent(localSpContent).build();
 
-        // Translates the speech from the input file
-        RecognizeResponse recognizeResponse = speechClient.recognize(recognitionConfig, recognitionAudio);
-        List<SpeechRecognitionResult> outputLists = recognizeResponse.getResultsList();
+        // Speech translation
+        List<SpeechRecognitionResult> speechRecLists = localSpClient.recognize(recConfigurations, recAudio).getResultsList();
 
-        for (SpeechRecognitionResult result: outputLists) {
-            List<SpeechRecognitionAlternative> alternativesLists = result.getAlternativesList();
-            for (SpeechRecognitionAlternative alternativesList: alternativesLists) {
-                System.out.printf("Transcription: %s%n", alternativesList.getTranscript());
-            }
+        for (SpeechRecognitionResult res: speechRecLists) {
+            List<SpeechRecognitionAlternative> srAltLists = res.getAlternativesList();
+            for (SpeechRecognitionAlternative srAltList: srAltLists)
+                System.out.println(srAltList.getTranscript());
         }
-        //Ending the Speech Client
-        speechClient.close();
+        // Quiting the speech client
+        localSpClient.close();
     }
 }
